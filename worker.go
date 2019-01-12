@@ -1,7 +1,7 @@
 package main
 
 import (
-  //"fmt"
+  "fmt"
   "sync"
   "regexp"
   "strconv"
@@ -11,10 +11,13 @@ import (
 
 type Worker struct {
   id int
+  sessionId int64
+  waitGroup *sync.WaitGroup
+  queue chan string
 }
 
-func (w *Worker) Start(waitGroup *sync.WaitGroup, queue chan string, result chan string){
-  defer waitGroup.Done()
+func (w *Worker) Start(result chan string){
+  defer w.waitGroup.Done()
 
   requests := make(map[string]*Request)
 
@@ -25,7 +28,7 @@ func (w *Worker) Start(waitGroup *sync.WaitGroup, queue chan string, result chan
   timeRegex, _ := regexp.Compile(`(\d+)ms`)
   statusRegex, _ := regexp.Compile(`\|\s(\d+)\s.+`)
 
-  for line := range queue {
+  for line := range w.queue {
     url, responseTime, responseCode, err := w.getRequestValues(line, urlRegex, timeRegex, statusRegex)
     if err == nil {
       // - check to see if Request with the same url exists in the requests map
@@ -84,25 +87,25 @@ func (w *Worker) getRequestValues(
 /*
  * Save the results as CSV file with unique session ID as its base name.
  */
-func (w *Worker) storeResults(results map[string]*Request) error {
+func (w *Worker) storeResults(results map[string]*Request) {
 
-  var rows [][]interface{}
+  var rows [][]string
   for _, v := range results {
     rows = append(rows, v.ToCsvData())
   }
 
-  WriteCSV("filename.csv", RequestCsvHeader(), rows)
-  return nil
+  WriteCSV(fmt.Sprintf("rqmetric_output_%v.csv", w.sessionId), RequestCsvHeader(), rows)
 }
 
 func StartWorker(
+  sessionId int64,
   nWorker int,
   waitGroup *sync.WaitGroup,
   queue chan string,
   result chan string ){
 
   for id:=0; id < nWorker; id++ {
-    w := &Worker{id: id}
-    go w.Start(waitGroup, queue, result)
+    w := &Worker{id, sessionId, waitGroup, queue}
+    go w.Start(result)
   }
 }

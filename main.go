@@ -28,6 +28,7 @@ func main() {
   }
 
   startTime := time.Now()
+  sessionId := startTime.Unix() // a timestamp, will be used as csv filename.
   lineChan := make(chan string, QUEUE_SIZE)
   resultChan := make(chan string)
 
@@ -39,15 +40,15 @@ func main() {
     close(resultChan)
   }()
 
-  StartWorker(NUM_WORKER, wg, lineChan, resultChan)
+  StartWorker(sessionId, NUM_WORKER, wg, lineChan, resultChan)
 
   reader := bufio.NewReader(file)
   go ReadLines(reader, lineChan)
 
   count := 0
   for range resultChan {
-    fmt.Printf("\rProcessing %v unique endpoints...", count)
+    fmt.Printf("\rImporting %v unique endpoints...", count)
     count++
   }
-  fmt.Printf("\nFinished in %v\n", time.Since(startTime))
+  fmt.Printf("\nFinished in %.2fs, your session ID: %v\n", time.Since(startTime).Seconds(), sessionId)
 }

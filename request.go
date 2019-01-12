@@ -16,26 +16,33 @@ type Request struct{
   serverErrorCount int
 }
 
-func (req *Request) String() string {
-  return fmt.Sprintf("url=%s, count=%v", req.url, req.count)
-}
-
 func RequestCsvHeader() []string {
-  return []string{"url", "count", "minTime", "maxTime", "avgTime", "okResponseCount", "redirectResponseCount", "clientErrorCount", "serverErrorCount"}
+  return []string{
+    "url",
+    "count",
+    "minTime",
+    "maxTime",
+    "avgTime",
+    "okResponseCount",
+    "redirectResponseCount",
+    "clientErrorCount",
+    "serverErrorCount",
+  }
 }
 
-func (req *Request) ToCsvData() []interface{} {
-  var data []interface{}
+func (req *Request) ToCsvData() []string {
+  var data []string
   data = append(data,
     req.url, 
-    req.count,
-    req.minTime,
-    req.maxTime,
-    req.avgTime,
-    req.okResponseCount,
-    req.redirectResponseCount,
-    req.clientErrorCount,
-    req.serverErrorCount)
+    fmt.Sprintf("%v", req.count),
+    fmt.Sprintf("%v", req.minTime),
+    fmt.Sprintf("%v", req.maxTime),
+    fmt.Sprintf("%.2f", req.avgTime),
+    fmt.Sprintf("%v", req.okResponseCount),
+    fmt.Sprintf("%v", req.redirectResponseCount),
+    fmt.Sprintf("%v", req.clientErrorCount),
+    fmt.Sprintf("%v", req.serverErrorCount),
+  )
   return data
 }
 
