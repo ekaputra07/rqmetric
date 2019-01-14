@@ -2,53 +2,28 @@ package main
 
 import (
   "fmt"
-  "os"
-  "bufio"
-  "time"
-  "sync"
+  "flag"
 )
 
-const (
-  NUM_WORKER = 1
-  QUEUE_SIZE = 500
-)
+func printUsage() {
+  fmt.Println("\nUsage examples:")
+  fmt.Println("Import log file  =>\trqmetric -import=production.log -profile=rails")
+  fmt.Println("Serve the report =>\trqmetric -serve=123456")
+  fmt.Println("Params help      =>\trqmetric -h\n")
+}
 
 func main() {
-  args := os.Args
+  filePath := flag.String("import", "", "Path to the file that will be imported")
+  profile := flag.String("profile", "rails", "Log profile to be use to parse the log line")
+  serveId := flag.String("serve", "", "Import ID to be serve")
 
-  if len(args) < 2 {
-    fmt.Println("Missing file name. Usage: `logmetric import ./production.log --profile=rails`")
-    os.Exit(1)
+  flag.Parse()
+
+  if *filePath != "" {
+    Import(*filePath, *profile)
+  } else if *serveId != "" {
+    Serve(*serveId)
+  } else {
+    printUsage()
   }
-
-  file, err := os.Open(args[1])
-  if err != nil {
-    fmt.Println(err)
-    os.Exit(1)
-  }
-
-  startTime := time.Now()
-  sessionId := startTime.Unix() // a timestamp, will be used as csv filename.
-  lineChan := make(chan string, QUEUE_SIZE)
-  resultChan := make(chan string)
-
-  wg := &sync.WaitGroup{}
-  wg.Add(NUM_WORKER)
-
-  go func (){
-    wg.Wait()
-    close(resultChan)
-  }()
-
-  StartWorker(sessionId, NUM_WORKER, wg, lineChan, resultChan)
-
-  reader := bufio.NewReader(file)
-  go ReadLines(reader, lineChan)
-
-  count := 0
-  for range resultChan {
-    fmt.Printf("\rImporting %v unique endpoints...", count)
-    count++
-  }
-  fmt.Printf("\nFinished in %.2fs, your session ID: %v\n", time.Since(startTime).Seconds(), sessionId)
 }
