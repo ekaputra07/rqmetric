@@ -2,6 +2,8 @@ package main
 
 import (
   "os"
+  "io"
+  "bufio"
   "encoding/csv"
   "log"
 )
@@ -23,4 +25,23 @@ func WriteCSV(fileName string, header []string, data [][]string) {
   for _, row := range data {
     writer.Write(row)
   }
+}
+
+func ReadCSV(fileName string) [][]string {
+  file, err := os.Open(fileName)
+  if err != nil {
+    log.Panic("Unable to read file from the disk!")
+  }
+  defer file.Close()
+
+  var rows [][]string
+  reader := csv.NewReader(bufio.NewReader(file))
+  for {
+    row, err := reader.Read()
+    if err == io.EOF {
+      break
+    }
+    rows = append(rows, row)
+  }
+  return rows
 }

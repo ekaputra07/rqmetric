@@ -5,6 +5,7 @@ import (
   "log"
   "net/http"
   "html/template"
+  "strconv"
 
   "github.com/gobuffalo/packr"
 )
@@ -17,36 +18,50 @@ type TemplateData struct {
   Requests []Request
 }
 
-func handleIndex(w http.ResponseWriter, req *http.Request) {
-  tplBox := packr.NewBox("./templates")
-  indexStr, _ := tplBox.FindString("index.html")
-
-  tpl, _ := template.New("index").Parse(indexStr)
-
+func loadData(id string) TemplateData {
+  rows := ReadCSV(fmt.Sprintf("rqmetric_output_%v.csv", id))
   var reqs []Request
-  reqs = append(reqs,
-    Request{"http://localhost", 1,10,float64(5.5),2000, 1,2,3,4},
-    Request{"http://localhost", 2,50,float64(1.5),200, 2,2,3,4},
-    Request{"http://localhost", 6,43,float64(3.5),500, 3,2,3,4},
-    Request{"http://localhost", 2,12,float64(4.5),7000, 5,2,3,4},
-    Request{"http://localhost", 6,13,float64(7.5),900, 4,2,3,4},
-    Request{"http://localhost", 9,15,float64(9.5),100, 6,2,3,4},)
+  for index, row := range rows {
+    // skip the header
+    if index == 0 {
+      continue
+    }
 
-  data := TemplateData{reqs}
+    Url := row[0]
+    MinTime, _ := strconv.Atoi(row[1])
+    MaxTime, _ := strconv.Atoi(row[2])
+    AvgTime, _ := strconv.ParseFloat(row[3], 64)
+    Count, _ := strconv.Atoi(row[4])
+    OkResponseCount, _ := strconv.Atoi(row[5])
+    RedirectResponseCount, _ := strconv.Atoi(row[6])
+    ClientErrorCount, _ := strconv.Atoi(row[7])
+    ServerErrorCount, _ := strconv.Atoi(row[8])
 
-  tpl.Execute(w, data)
+    reqs = append(reqs, Request{Url, MinTime, MaxTime, AvgTime, Count, OkResponseCount, RedirectResponseCount, ClientErrorCount, ServerErrorCount})
+  }
+
+  return TemplateData{reqs}
 }
 
 func Serve(id string) {
+
+  data := loadData(id)  
+  tplBox := packr.NewBox("./templates")
+  staticBox := packr.NewBox("./static")
+
   mux := http.NewServeMux()
 
-  staticBox := packr.NewBox("./static")
-  fs := http.FileServer(staticBox)
+  // serve static files
+  mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(staticBox)))
 
-  mux.Handle("/static/", fs)
-  mux.HandleFunc("/", handleIndex)
+  // serve index page 
+  mux.HandleFunc("/", func (w http.ResponseWriter, req *http.Request) {
+    indexStr, _ := tplBox.FindString("index.html")
+    tpl, _ := template.New("index").Parse(indexStr)
+    tpl.Execute(w, data)
+  })
 
-  log.Printf("Listening on http://localhost:%v...\n", PORT)
+  log.Printf("Listening on http://localhost:%v ...\n", PORT)
   if err := http.ListenAndServe(fmt.Sprintf(":%v", PORT), mux); err != http.ErrServerClosed {
     log.Fatal(`Server failed to start: `, err)
   }

@@ -19,10 +19,10 @@ type Request struct{
 func RequestCsvHeader() []string {
   return []string{
     "Url",
-    "Count",
     "MinTime",
     "MaxTime",
     "AvgTime",
+    "Count",
     "OkResponseCount",
     "RedirectResponseCount",
     "ClientErrorCount",
@@ -34,10 +34,10 @@ func (req *Request) ToCsvData() []string {
   var data []string
   data = append(data,
     req.Url, 
-    fmt.Sprintf("%v", req.Count),
     fmt.Sprintf("%v", req.MinTime),
     fmt.Sprintf("%v", req.MaxTime),
     fmt.Sprintf("%.2f", req.AvgTime),
+    fmt.Sprintf("%v", req.Count),
     fmt.Sprintf("%v", req.OkResponseCount),
     fmt.Sprintf("%v", req.RedirectResponseCount),
     fmt.Sprintf("%v", req.ClientErrorCount),
