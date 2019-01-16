@@ -16,6 +16,8 @@ const (
 
 type TemplateData struct {
   Requests []Request
+  AppName string
+  AppVersion string
 }
 
 func loadData(id string) TemplateData {
@@ -40,7 +42,7 @@ func loadData(id string) TemplateData {
     reqs = append(reqs, Request{Url, MinTime, MaxTime, AvgTime, Count, OkResponseCount, RedirectResponseCount, ClientErrorCount, ServerErrorCount})
   }
 
-  return TemplateData{reqs}
+  return TemplateData{reqs, AppName, AppVersion}
 }
 
 func Serve(id string) {

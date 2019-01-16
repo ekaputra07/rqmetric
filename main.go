@@ -6,6 +6,7 @@ import (
 )
 
 func printUsage() {
+  fmt.Printf("\n== [%v %v] ==\n", AppName, AppVersion)
   fmt.Println("\nUsage examples:")
   fmt.Println("Import log file  =>\trqmetric -import=production.log -profile=rails")
   fmt.Println("Serve the report =>\trqmetric -serve=123456")
@@ -15,7 +16,7 @@ func printUsage() {
 func main() {
   filePath := flag.String("import", "", "Path to the file that will be imported")
   profile := flag.String("profile", "rails", "Log profile to be use to parse the log line")
-  serveId := flag.String("serve", "", "Import ID to be serve")
+  serveId := flag.String("serve", "", "Import ID to be served")
 
   flag.Parse()
 
