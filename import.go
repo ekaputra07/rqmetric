@@ -50,5 +50,5 @@ func Import(filePath string, profile string) {
 		count++
 	}
 	fmt.Printf("\nFinished in %.2fs, your import ID: %v\n\n", time.Since(startTime).Seconds(), importID)
-	fmt.Printf("Now you can view the report with command: `rqmetric -serve=%v`\n\n", importID)
+	fmt.Printf("Now you can view the report with command: `rqmetric --view %v`\n\n", importID)
 }
