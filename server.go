@@ -10,12 +10,14 @@ import (
 	"github.com/gobuffalo/packr"
 )
 
+// TemplateData is a data model that will be passed as a template data.
 type TemplateData struct {
 	Requests   []Request
 	AppName    string
 	AppVersion string
 }
 
+// loadData loads data from the CSV file and returns it as a TemplateData object.
 func loadData(id string) TemplateData {
 	rows := ReadCSV(fmt.Sprintf("rqmetric_output_%v.csv", id))
 	var reqs []Request
@@ -25,7 +27,7 @@ func loadData(id string) TemplateData {
 			continue
 		}
 
-		Url := row[0]
+		URL := row[0]
 		MinTime, _ := strconv.Atoi(row[1])
 		MaxTime, _ := strconv.Atoi(row[2])
 		AvgTime, _ := strconv.ParseFloat(row[3], 64)
@@ -35,12 +37,13 @@ func loadData(id string) TemplateData {
 		ClientErrorCount, _ := strconv.Atoi(row[7])
 		ServerErrorCount, _ := strconv.Atoi(row[8])
 
-		reqs = append(reqs, Request{Url, MinTime, MaxTime, AvgTime, Count, OkResponseCount, RedirectResponseCount, ClientErrorCount, ServerErrorCount})
+		reqs = append(reqs, Request{URL, MinTime, MaxTime, AvgTime, Count, OkResponseCount, RedirectResponseCount, ClientErrorCount, ServerErrorCount})
 	}
 
 	return TemplateData{reqs, AppName, AppVersion}
 }
 
+// Serve starts a simple web server to serve the data on specific port.
 func Serve(id string, port string) {
 
 	data := loadData(id)

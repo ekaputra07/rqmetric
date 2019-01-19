@@ -8,13 +8,13 @@ import (
 	"github.com/rivo/tview"
 )
 
-// TableData type
+// TableData will holds the table data and its header.
 type TableData struct {
 	data   [][]string
 	header []string
 }
 
-// Load Table data from specified CSV file
+// LoadData data from specified CSV file and set the TableData.data.
 func (td *TableData) LoadData(fileName string) {
 	rows := ReadCSV(fileName)
 
@@ -27,12 +27,12 @@ func (td *TableData) LoadData(fileName string) {
 	}
 }
 
-// Set header of the table
+// SetHeader sets the TableData.header.
 func (td *TableData) SetHeader(header []string) {
 	td.header = header
 }
 
-// Sort table data.
+// SortData do sorting to the TableData.data.
 // If the sortIndex is 0 which is the column of URL, ignore it.
 func (td *TableData) SortData(sortIndex, sortDirection int) {
 	// don't sort if sort index is the URL column.
@@ -48,14 +48,14 @@ func (td *TableData) SortData(sortIndex, sortDirection int) {
 	}
 }
 
-// Return data with its header
+// DataForTable returns complete data with its header.
 func (td *TableData) DataForTable() [][]string {
 	var tableRows [][]string
 	tableRows = append(tableRows, td.header)
 	return append(tableRows, td.data...)
 }
 
-// Fill the table cells
+// fillTable fills the table cells.
 func fillTable(table *tview.Table, cols, rows int, data [][]string) {
 	for r := 0; r < rows; r++ {
 		for c := 0; c < cols; c++ {
@@ -72,7 +72,7 @@ func fillTable(table *tview.Table, cols, rows int, data [][]string) {
 	}
 }
 
-// Start the data viewer
+// StartViewer start the data viewer application.
 func StartViewer(id string) {
 	tableData := &TableData{}
 	tableData.SetHeader([]string{"URL", "Min. (ms)", "Max. (ms)", "Avg. (ms)", "Count", "2XX", "3XX", "4XX", "5XX"})

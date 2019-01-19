@@ -1,10 +1,14 @@
 GO111MODULE=on
 
 develop:
+	go get -u golang.org/x/lint/golint
 	go get -u github.com/gobuffalo/packr/packr
 
 check:
-	go vet && go fmt && go test
+	golint
+	go vet
+	go fmt
+	go test
 
 build:
 	packr build

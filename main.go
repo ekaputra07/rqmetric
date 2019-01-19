@@ -17,18 +17,18 @@ func printUsage() {
 func main() {
 	filePath := flag.String("import", "", "Path to the file that will be imported")
 	profile := flag.String("profile", "rails", "Log profile to be use to parse the log line")
-	serveId := flag.String("serve", "", "Import ID to be served")
+	serveImportID := flag.String("serve", "", "Import ID to be served")
 	servePort := flag.String("port", "5000", "Port number to bind the http service, must be used with --serve param")
-	viewId := flag.String("view", "", "Import ID to be viewed")
+	viewImportID := flag.String("view", "", "Import ID to be viewed")
 
 	flag.Parse()
 
 	if *filePath != "" {
 		Import(*filePath, *profile)
-	} else if *serveId != "" {
-		Serve(*serveId, *servePort)
-	} else if *viewId != "" {
-		StartViewer(*viewId)
+	} else if *serveImportID != "" {
+		Serve(*serveImportID, *servePort)
+	} else if *viewImportID != "" {
+		StartViewer(*viewImportID)
 	} else {
 		printUsage()
 	}

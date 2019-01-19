@@ -5,10 +5,11 @@ import (
 	"strings"
 )
 
+// readLine read and return a single line
 func readLine(r *bufio.Reader) (string, error) {
 	var (
-		isPrefix bool  = true
-		err      error = nil
+		isPrefix = true
+		err      error
 		line, ln []byte
 	)
 	for isPrefix && err == nil {
@@ -18,6 +19,7 @@ func readLine(r *bufio.Reader) (string, error) {
 	return string(ln), err
 }
 
+// ReadLines read all lines of the log files and pass the results to line channel
 func ReadLines(reader *bufio.Reader, lineChan chan string) {
 	s, e := readLine(reader)
 

@@ -9,13 +9,15 @@ import (
 	"sync"
 )
 
+// Worker is an object that keep tracks of the processing log line.
 type Worker struct {
 	id        int
-	sessionId int64
+	importID  int64
 	waitGroup *sync.WaitGroup
 	queue     chan string
 }
 
+// Start will listen for result channel and process every text passed to it.
 func (w *Worker) Start(result chan string) {
 	defer w.waitGroup.Done()
 
@@ -46,10 +48,8 @@ func (w *Worker) Start(result chan string) {
 	w.storeResults(requests)
 }
 
-/*
- * Extract url, response time, response code, isError from log line.
- * If one from those url, time and code is missing, it will return error=true.
- */
+// getRequestValues extracts url, response time, response code, isError from log line.
+// If one from those url, time and code is missing, it will return error=true.
 func (w *Worker) getRequestValues(
 	line string,
 	urlRegex *regexp.Regexp,
@@ -74,19 +74,17 @@ func (w *Worker) getRequestValues(
 	codeInt, _ := strconv.Atoi(code[1])
 
 	// extra query string cleanup
-	var cleanedUrl string
+	var cleanedURL string
 	if strings.Contains(url[1], "?") {
-		cleanedUrl = strings.Split(url[1], "?")[0]
+		cleanedURL = strings.Split(url[1], "?")[0]
 	} else {
-		cleanedUrl = url[1]
+		cleanedURL = url[1]
 	}
 
-	return cleanedUrl, timeInt, codeInt, nil
+	return cleanedURL, timeInt, codeInt, nil
 }
 
-/*
- * Save the results as CSV file with unique session ID as its base name.
- */
+// storeResults saves the results as CSV file with unique session ID as its base name.
 func (w *Worker) storeResults(results map[string]*Request) {
 
 	var rows [][]string
@@ -94,18 +92,19 @@ func (w *Worker) storeResults(results map[string]*Request) {
 		rows = append(rows, v.ToCsvData())
 	}
 
-	WriteCSV(fmt.Sprintf("rqmetric_output_%v.csv", w.sessionId), RequestCsvHeader(), rows)
+	WriteCSV(fmt.Sprintf("rqmetric_output_%v.csv", w.importID), RequestCsvHeader(), rows)
 }
 
+// StartWorker starts the worker goroutines.
 func StartWorker(
-	sessionId int64,
+	importID int64,
 	nWorker int,
 	waitGroup *sync.WaitGroup,
 	queue chan string,
 	result chan string) {
 
 	for id := 0; id < nWorker; id++ {
-		w := &Worker{id, sessionId, waitGroup, queue}
+		w := &Worker{id, importID, waitGroup, queue}
 		go w.Start(result)
 	}
 }

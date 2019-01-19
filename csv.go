@@ -8,7 +8,7 @@ import (
 	"os"
 )
 
-// Write 2 dimensional array into a csv file.
+// WriteCSV write 2 dimensional array into a csv file.
 func WriteCSV(fileName string, header []string, data [][]string) {
 	file, err := os.Create(fileName)
 	if err != nil {
@@ -28,7 +28,7 @@ func WriteCSV(fileName string, header []string, data [][]string) {
 	}
 }
 
-// Read csv file and return a 2 dimensional array.
+// ReadCSV read csv file and return a 2 dimensional array.
 func ReadCSV(fileName string) [][]string {
 	file, err := os.Open(fileName)
 	if err != nil {

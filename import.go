@@ -9,10 +9,13 @@ import (
 )
 
 const (
-	NUM_WORKER = 1
-	QUEUE_SIZE = 500
+	// NumWorker is number of worker to run the import process
+	NumWorker = 1
+	// QueueSize is number of lines to be processed
+	QueueSize = 500
 )
 
+// Import read the log file and save the result as a CSV file
 func Import(filePath string, profile string) {
 	file, err := os.Open(filePath)
 	if err != nil {
@@ -24,19 +27,19 @@ func Import(filePath string, profile string) {
 	fmt.Printf("path=%v, profile=%v\n\n", filePath, profile)
 
 	startTime := time.Now()
-	sessionId := startTime.Unix() // a timestamp, will be used as csv filename.
-	lineChan := make(chan string, QUEUE_SIZE)
+	importID := startTime.Unix() // a timestamp, will be used as csv filename.
+	lineChan := make(chan string, QueueSize)
 	resultChan := make(chan string)
 
 	wg := &sync.WaitGroup{}
-	wg.Add(NUM_WORKER)
+	wg.Add(NumWorker)
 
 	go func() {
 		wg.Wait()
 		close(resultChan)
 	}()
 
-	StartWorker(sessionId, NUM_WORKER, wg, lineChan, resultChan)
+	StartWorker(importID, NumWorker, wg, lineChan, resultChan)
 
 	reader := bufio.NewReader(file)
 	go ReadLines(reader, lineChan)
@@ -46,6 +49,6 @@ func Import(filePath string, profile string) {
 		fmt.Printf("\r> Importing %v unique endpoints...", count)
 		count++
 	}
-	fmt.Printf("\nFinished in %.2fs, your import ID: %v\n\n", time.Since(startTime).Seconds(), sessionId)
-	fmt.Printf("Now you can view the report with command: `rqmetric -serve=%v`\n\n", sessionId)
+	fmt.Printf("\nFinished in %.2fs, your import ID: %v\n\n", time.Since(startTime).Seconds(), importID)
+	fmt.Printf("Now you can view the report with command: `rqmetric -serve=%v`\n\n", importID)
 }
