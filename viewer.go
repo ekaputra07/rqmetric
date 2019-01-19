@@ -3,82 +3,60 @@ package main
 import (
 	"fmt"
 	"log"
-	"sort"
-	"strconv"
 
 	"github.com/gdamore/tcell"
 	"github.com/rivo/tview"
 )
 
-const (
-	SortAsc int = iota
-	SortDesc
-)
-
-// Sort list by converting compared values into Integer
-func sortByIntColumn(list [][]string, sortIndex, sortDirection int) [][]string {
-	sort.Slice(list[:], func(i, j int) bool {
-		iInt, _ := strconv.Atoi(list[i][sortIndex])
-		jInt, _ := strconv.Atoi(list[j][sortIndex])
-		if sortDirection == SortDesc {
-			return iInt > jInt
-		} else {
-			return iInt < jInt
-		}
-	})
-	return list
+// TableData type
+type TableData struct {
+	data   [][]string
+	header []string
 }
 
-// Sort list by converting compared values into Float64
-func sortByFloatColumn(list [][]string, sortIndex, sortDirection int) [][]string {
-	sort.Slice(list[:], func(i, j int) bool {
-		iFloat, _ := strconv.ParseFloat(list[i][sortIndex], 64)
-		jFloat, _ := strconv.ParseFloat(list[j][sortIndex], 64)
-		if sortDirection == SortDesc {
-			return iFloat > jFloat
-		} else {
-			return iFloat < jFloat
-		}
-	})
-	return list
-}
-
-// Load table data from CSV file.
-func loadTableData(id string, sortIndex, sortDirection int) [][]string {
-	rows := ReadCSV(fmt.Sprintf("rqmetric_output_%v.csv", id))
-	var reqs [][]string
+// Load Table data from specified CSV file
+func (td *TableData) LoadData(fileName string) {
+	rows := ReadCSV(fileName)
 
 	for index, row := range rows {
 		// remove the original csv header
 		if index == 0 {
 			continue
 		}
-		reqs = append(reqs, row)
+		td.data = append(td.data, row)
 	}
-
-	// apply sorting based on column index (descending)
-	switch sortIndex {
-	case 0: // return unsorted
-		reqs = reqs
-	case 3: // sort by Avg. time
-		reqs = sortByFloatColumn(reqs, sortIndex, sortDirection)
-	default:
-		reqs = sortByIntColumn(reqs, sortIndex, sortDirection)
-	}
-
-	// add the header
-	var header [][]string
-	header = append(header, []string{"URL", "Min. (ms)", "Max. (ms)", "Avg. (ms)", "Count", "2XX", "3XX", "4XX", "5XX"})
-	return append(header, reqs...)
 }
 
-func StartViewer(id string) {
-	requests := loadTableData(id, 4, SortDesc) // sort by Count by default
+// Set header of the table
+func (td *TableData) SetHeader(header []string) {
+	td.header = header
+}
 
-	viewer := tview.NewApplication()
-	table := tview.NewTable()
-	cols, rows := len(RequestCsvHeader()), len(requests)
+// Sort table data.
+// If the sortIndex is 0 which is the column of URL, ignore it.
+func (td *TableData) SortData(sortIndex, sortDirection int) {
+	// don't sort if sort index is the URL column.
+	if sortIndex == 0 {
+		return
+	}
 
+	switch sortIndex {
+	case 3: // sort by Avg. time
+		td.data = SortByFloatColumn(td.data, sortIndex, sortDirection)
+	default:
+		td.data = SortByIntColumn(td.data, sortIndex, sortDirection)
+	}
+}
+
+// Return data with its header
+func (td *TableData) DataForTable() [][]string {
+	var tableRows [][]string
+	tableRows = append(tableRows, td.header)
+	return append(tableRows, td.data...)
+}
+
+// Fill the table cells
+func fillTable(table *tview.Table, cols, rows int, data [][]string) {
 	for r := 0; r < rows; r++ {
 		for c := 0; c < cols; c++ {
 			color := tcell.ColorWhite
@@ -88,18 +66,44 @@ func StartViewer(id string) {
 			case c == 0 && r > 0:
 				color = tcell.ColorGreen
 			}
-			cell := tview.NewTableCell(requests[r][c]).SetTextColor(color).SetAlign(tview.AlignLeft).SetExpansion(1)
+			cell := tview.NewTableCell(data[r][c]).SetTextColor(color).SetAlign(tview.AlignLeft).SetExpansion(1)
 			table.SetCell(r, c, cell)
 		}
 	}
+}
 
-	table.SetFixed(1, 1).SetDoneFunc(func(key tcell.Key) {
-		if key == tcell.KeyEscape {
-			viewer.Stop()
-		}
-	}).SetSelectedFunc(func(row, col int) {
-		log.Println(row, col)
-	})
+// Start the data viewer
+func StartViewer(id string) {
+	tableData := &TableData{}
+	tableData.SetHeader([]string{"URL", "Min. (ms)", "Max. (ms)", "Avg. (ms)", "Count", "2XX", "3XX", "4XX", "5XX"})
+	tableData.LoadData(fmt.Sprintf("rqmetric_output_%v.csv", id))
+	tableData.SortData(4, SortDesc) // by default we sort it by request count descending.
+
+	data := tableData.DataForTable()
+
+	viewer := tview.NewApplication()
+	table := tview.NewTable()
+	cols, rows := len(tableData.header), len(data)
+
+	fillTable(table, cols, rows, data)
+
+	table.SetFixed(1, 1).
+		SetSelectable(false, true).
+		Select(0, 4). // select request count column by default.
+		SetSelectedStyle(tcell.ColorDefault, tcell.ColorDarkSlateGray, 0).
+		SetDoneFunc(func(key tcell.Key) {
+			if key == tcell.KeyEscape {
+				viewer.Stop()
+			}
+		}).
+		SetSelectedFunc(func(row, col int) {
+			// when Enter key pressed on selected column, sort table data based on that column.
+			viewer.QueueUpdateDraw(func() {
+				tableData.SortData(col, SortDesc)
+				fillTable(table, cols, rows, tableData.DataForTable())
+				table.ScrollToBeginning()
+			})
+		})
 
 	if err := viewer.SetRoot(table, true).SetFocus(table).Run(); err != nil {
 		log.Panic(err)
