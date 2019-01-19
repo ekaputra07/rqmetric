@@ -10,10 +10,6 @@ import (
   "github.com/gobuffalo/packr"
 )
 
-const (
-  PORT = 5000
-)
-
 type TemplateData struct {
   Requests []Request
   AppName string
@@ -45,7 +41,7 @@ func loadData(id string) TemplateData {
   return TemplateData{reqs, AppName, AppVersion}
 }
 
-func Serve(id string) {
+func Serve(id string, port string) {
 
   data := loadData(id)  
   tplBox := packr.NewBox("./templates")
@@ -63,8 +59,8 @@ func Serve(id string) {
     tpl.Execute(w, data)
   })
 
-  log.Printf("Listening on http://localhost:%v ...\n", PORT)
-  if err := http.ListenAndServe(fmt.Sprintf(":%v", PORT), mux); err != http.ErrServerClosed {
+  log.Printf("Listening on http://localhost:%v ...\n", port)
+  if err := http.ListenAndServe(fmt.Sprintf(":%v", port), mux); err != http.ErrServerClosed {
     log.Fatal(`Server failed to start: `, err)
   }
 }
