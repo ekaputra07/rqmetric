@@ -15,3 +15,6 @@ build:
 
 install:
 	packr install
+
+linux:
+	env GOOS=linux GOARCH=amd64 packr build
