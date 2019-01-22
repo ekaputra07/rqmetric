@@ -17,9 +17,14 @@ const (
 
 // Import read the log file and save the result as a CSV file
 func Import(filePath string, profile string) {
+	if profile == "" {
+		fmt.Println("[ERROR] Selected profile contains empty regex.")
+		os.Exit(1)
+	}
+
 	file, err := os.Open(filePath)
 	if err != nil {
-		fmt.Println(err)
+		fmt.Printf("[ERROR] %s", err)
 		os.Exit(1)
 	}
 
