@@ -66,7 +66,11 @@ func fillTable(table *tview.Table, cols, rows int, data [][]string) {
 			case c == 0 && r > 0:
 				color = tcell.ColorGreen
 			}
-			cell := tview.NewTableCell(data[r][c]).SetTextColor(color).SetAlign(tview.AlignLeft).SetExpansion(1)
+			cell := tview.NewTableCell(data[r][c]).
+				SetTextColor(color).
+				SetAlign(tview.AlignLeft).
+				SetExpansion(1).
+				SetMaxWidth(800)
 			table.SetCell(r, c, cell)
 		}
 	}

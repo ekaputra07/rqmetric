@@ -2,7 +2,6 @@ GO111MODULE=on
 
 develop:
 	go get -u golang.org/x/lint/golint
-	go get -u github.com/gobuffalo/packr/packr
 
 check:
 	golint
@@ -11,10 +10,10 @@ check:
 	go test
 
 build:
-	packr build
+	go build
 
 install:
-	packr install
+	go install
 
 linux:
-	env GOOS=linux GOARCH=amd64 packr build
+	env GOOS=linux GOARCH=amd64 go build

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"regexp"
 	"strconv"
@@ -11,8 +10,8 @@ import (
 
 // Worker is an object that keep tracks of the processing log line.
 type Worker struct {
-	id        int
 	importID  int64
+	re        *regexp.Regexp
 	waitGroup *sync.WaitGroup
 	queue     chan string
 }
@@ -23,25 +22,16 @@ func (w *Worker) Start(result chan string) {
 
 	requests := make(map[string]*Request)
 
-	// Create regexp
-	// TODO: If one of this regex err, quit program.
-	// TODO: make these regex configurable
-	urlRegex, _ := regexp.Compile(`\[(.+)\]`)
-	timeRegex, _ := regexp.Compile(`(\d+)ms`)
-	statusRegex, _ := regexp.Compile(`\|\s(\d+)\s.+`)
-
 	for line := range w.queue {
-		url, responseTime, responseCode, err := w.getRequestValues(line, urlRegex, timeRegex, statusRegex)
-		if err == nil {
-			// - check to see if Request with the same url exists in the requests map
-			// - exist? update.
-			// - not exist? create new Request and add to map.
-			if req, ok := requests[url]; ok {
-				req.Add(responseTime, responseCode)
-			} else {
-				result <- url // unique url
-				requests[url] = NewRequest(url, responseTime, responseCode)
-			}
+		url, responseTime, responseCode := w.getRequestValues(line)
+		// - check to see if Request with the same url exists in the requests map
+		// - exist? update.
+		// - not exist? create new Request and add to map.
+		if req, ok := requests[url]; ok {
+			req.Add(responseTime, responseCode)
+		} else {
+			result <- url // unique url
+			requests[url] = NewRequest(url, responseTime, responseCode)
 		}
 	}
 
@@ -50,38 +40,29 @@ func (w *Worker) Start(result chan string) {
 
 // getRequestValues extracts url, response time, response code, isError from log line.
 // If one from those url, time and code is missing, it will return error=true.
-func (w *Worker) getRequestValues(
-	line string,
-	urlRegex *regexp.Regexp,
-	timeRegex *regexp.Regexp,
-	statusRegex *regexp.Regexp) (string, int, int, error) {
+func (w *Worker) getRequestValues(line string) (string, int, int) {
 
-	if !urlRegex.MatchString(line) {
-		return "", 0, 0, errors.New("url not found")
-	}
-	if !timeRegex.MatchString(line) {
-		return "", 0, 0, errors.New("request time not found")
-	}
-	if !statusRegex.MatchString(line) {
-		return "", 0, 0, errors.New("status code not found")
+	match := w.re.FindStringSubmatch(line)
+	names := w.re.SubexpNames()
+	values := make(map[string]string)
+
+	for i, value := range match {
+		values[names[i]] = value
 	}
 
-	url := urlRegex.FindStringSubmatch(line)
-	time := timeRegex.FindStringSubmatch(line)
-	code := statusRegex.FindStringSubmatch(line)
-
-	timeInt, _ := strconv.Atoi(time[1])
-	codeInt, _ := strconv.Atoi(code[1])
+	url := values["url"]
+	respTime, _ := strconv.Atoi(values["time"])
+	respCode, _ := strconv.Atoi(values["code"])
 
 	// extra query string cleanup
 	var cleanedURL string
-	if strings.Contains(url[1], "?") {
-		cleanedURL = strings.Split(url[1], "?")[0]
+	if strings.Contains(url, "?") {
+		cleanedURL = strings.Split(url, "?")[0]
 	} else {
-		cleanedURL = url[1]
+		cleanedURL = url
 	}
 
-	return cleanedURL, timeInt, codeInt, nil
+	return cleanedURL, respTime, respCode
 }
 
 // storeResults saves the results as CSV file with unique session ID as its base name.
@@ -89,6 +70,9 @@ func (w *Worker) storeResults(results map[string]*Request) {
 
 	var rows [][]string
 	for _, v := range results {
+		if v.Count == 10 {
+			continue
+		}
 		rows = append(rows, v.ToCsvData())
 	}
 
@@ -98,13 +82,11 @@ func (w *Worker) storeResults(results map[string]*Request) {
 // StartWorker starts the worker goroutines.
 func StartWorker(
 	importID int64,
-	nWorker int,
+	re *regexp.Regexp,
 	waitGroup *sync.WaitGroup,
 	queue chan string,
 	result chan string) {
 
-	for id := 0; id < nWorker; id++ {
-		w := &Worker{id, importID, waitGroup, queue}
-		go w.Start(result)
-	}
+	w := &Worker{importID, re, waitGroup, queue}
+	go w.Start(result)
 }

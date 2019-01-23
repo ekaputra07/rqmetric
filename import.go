@@ -4,27 +4,19 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"regexp"
 	"sync"
 	"time"
 )
 
-const (
-	// NumWorker is number of worker to run the import process
-	NumWorker = 1
-	// QueueSize is number of lines to be processed
-	QueueSize = 500
-)
+const queueSize = 500
 
 // Import read the log file and save the result as a CSV file
-func Import(filePath string, profile string) {
-	if profile == "" {
-		fmt.Println("[ERROR] Selected profile contains empty regex.")
-		os.Exit(1)
-	}
+func Import(filePath, profile string, re *regexp.Regexp) {
 
 	file, err := os.Open(filePath)
 	if err != nil {
-		fmt.Printf("[ERROR] %s", err)
+		fmt.Printf("[ERROR] %s\n", err)
 		os.Exit(1)
 	}
 
@@ -33,27 +25,27 @@ func Import(filePath string, profile string) {
 
 	startTime := time.Now()
 	importID := startTime.Unix() // a timestamp, will be used as csv filename.
-	lineChan := make(chan string, QueueSize)
+	lineChan := make(chan string, queueSize)
 	resultChan := make(chan string)
 
 	wg := &sync.WaitGroup{}
-	wg.Add(NumWorker)
+	wg.Add(1)
 
 	go func() {
 		wg.Wait()
 		close(resultChan)
 	}()
 
-	StartWorker(importID, NumWorker, wg, lineChan, resultChan)
+	StartWorker(importID, re, wg, lineChan, resultChan)
 
 	reader := bufio.NewReader(file)
-	go ReadLines(reader, lineChan)
+	go ReadLines(reader, re, lineChan)
 
-	count := 0
+	count := 1
 	for range resultChan {
 		fmt.Printf("\r> Importing %v unique endpoints...", count)
 		count++
 	}
 	fmt.Printf("\nFinished in %.2fs, your import ID: %v\n\n", time.Since(startTime).Seconds(), importID)
-	fmt.Printf("Now you can view the report with command: `rqmetric --view %v`\n\n", importID)
+	fmt.Printf("Now you can view the report with command: `rqmetric -view %v`\n\n", importID)
 }

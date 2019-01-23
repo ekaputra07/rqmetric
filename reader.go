@@ -2,7 +2,7 @@ package main
 
 import (
 	"bufio"
-	"strings"
+	"regexp"
 )
 
 // readLine read and return a single line
@@ -20,11 +20,11 @@ func readLine(r *bufio.Reader) (string, error) {
 }
 
 // ReadLines read all lines of the log files and pass the results to line channel
-func ReadLines(reader *bufio.Reader, lineChan chan string) {
+func ReadLines(reader *bufio.Reader, re *regexp.Regexp, lineChan chan string) {
 	s, e := readLine(reader)
 
 	for e == nil {
-		if strings.Contains(s, "Completed") {
+		if re.MatchString(s) {
 			lineChan <- s
 		}
 		s, e = readLine(reader)
