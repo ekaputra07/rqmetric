@@ -70,7 +70,7 @@ func (w *Worker) storeResults(results map[string]*Request) {
 
 	var rows [][]string
 	for _, v := range results {
-		if v.Count == 10 {
+		if v.Count < 10 {
 			continue
 		}
 		rows = append(rows, v.ToCsvData())
