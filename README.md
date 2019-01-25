@@ -24,6 +24,10 @@ Serve the report =>	rqmetric --serve 123456 --port 8080
 Params help      =>	rqmetric -h
 ```
 
+[![asciicast](https://asciinema.org/a/OIxdAp6HaRWrotffqikGLL5oi.svg)](https://asciinema.org/a/OIxdAp6HaRWrotffqikGLL5oi)
+
+[![asciicast](https://asciinema.org/a/Nxh7n29c3KlkXhft2wvyPV6pi.svg)](https://asciinema.org/a/Nxh7n29c3KlkXhft2wvyPV6pi)
+
 ## Development
 
 - Clone this repository
