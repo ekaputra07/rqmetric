@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 
 	"github.com/gdamore/tcell"
@@ -77,10 +76,10 @@ func fillTable(table *tview.Table, cols, rows int, data [][]string) {
 }
 
 // StartViewer start the data viewer application.
-func StartViewer(id string) {
+func StartViewer(csvPath string) {
 	tableData := &TableData{}
 	tableData.SetHeader([]string{"URL", "Min. (ms)", "Max. (ms)", "Avg. (ms)", "Count", "2XX", "3XX", "4XX", "5XX"})
-	tableData.LoadData(fmt.Sprintf("rqmetric_output_%v.csv", id))
+	tableData.LoadData(csvPath)
 	tableData.SortData(4, SortDesc) // by default we sort it by request count descending.
 
 	data := tableData.DataForTable()

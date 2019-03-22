@@ -12,6 +12,7 @@ import (
 type Worker struct {
 	importID  int64
 	re        *regexp.Regexp
+	maxURLPartsLength int64
 	waitGroup *sync.WaitGroup
 	queue     chan string
 }
@@ -62,7 +63,25 @@ func (w *Worker) getRequestValues(line string) (string, int, int) {
 		cleanedURL = url
 	}
 
-	return cleanedURL, respTime, respCode
+	// If the maxURLPartsLength == 0, return the url as is.
+	if w.maxURLPartsLength == 0 {
+		return cleanedURL, respTime, respCode
+	}
+
+	// remove params from url
+	// - split the path
+	// - check each parts length
+	// - if its > maxURLPartsLength, replace it with <param>
+	parts := strings.Split(cleanedURL, "/")
+	var newParts []string
+	for _, p := range parts {
+		if len(p) > int(w.maxURLPartsLength) {
+			newParts = append(newParts, fmt.Sprintf("<param:%v>", len(p)))
+		} else {
+			newParts = append(newParts, p)
+		}
+	}
+	return strings.Join(newParts[:], "/"), respTime, respCode
 }
 
 // storeResults saves the results as CSV file with unique session ID as its base name.
@@ -83,10 +102,11 @@ func (w *Worker) storeResults(results map[string]*Request) {
 func StartWorker(
 	importID int64,
 	re *regexp.Regexp,
+	maxURLPartsLength int64,
 	waitGroup *sync.WaitGroup,
 	queue chan string,
 	result chan string) {
 
-	w := &Worker{importID, re, waitGroup, queue}
+	w := &Worker{importID, re, maxURLPartsLength, waitGroup, queue}
 	go w.Start(result)
 }
